@@ -25,11 +25,15 @@ CRITICAL DIRECTION FOR ALL AI AGENTS (XERJ, CLAUDE CODE, CURSOR, COPILOT):
 """
 
 import PyQt6.QtWidgets as QtW
+from PyQt6.QtCore import Qt
+
+from UI.themes import apply_theme
 
 class TriadApp(QtW.QMainWindow):
     def __init__(self, app):
         super().__init__()
         self.app = app
+        self.app.setStyle("Fusion")
 
         # Core window settings
         self.setWindowTitle("Sonic Triad Studio - RetroKoH 2027")
@@ -42,9 +46,49 @@ class TriadApp(QtW.QMainWindow):
 
         # Mode Tabs
         self.tabs = QtW.QTabWidget()
+        self.tabs.tabBar().setObjectName("mainTabBar")
         layout.addWidget(self.tabs)
+
+        # Theme button; Set initial theme (To-Do: Make into a Preferences button)
+        self.theme_button = QtW.QPushButton(apply_theme(self.app, set_theme="Dark"))
+        self.theme_button.clicked.connect(self.toggle_theme)
+        self.tabs.setCornerWidget(self.theme_button, Qt.Corner.TopRightCorner)
+
+        self.init_tabs()
 
         # Status label
         self.statusLabel = QtW.QLabel("Status: Idle")
         self.statusLabel.setFixedHeight(20)
         layout.addWidget(self.statusLabel)
+
+    def init_tabs(self):
+        """
+        Initialize the tabs.
+
+        :returns: None
+        """
+        self.init_tab("Projects")
+        self.init_tab("Palettes")
+        self.init_tab("Sprites")
+        self.init_tab("Animations")
+        self.init_tab("Objects")
+        self.init_tab("Levels")
+        self.init_tab("Tilemaps")
+        self.init_tab("Special Stages")
+
+    def init_tab(self, name):
+        """
+        Initialize a placeholder tab.
+
+        :returns: None
+        """
+        tab = QtW.QTabWidget()
+        self.tabs.addTab(tab, name)
+
+    def toggle_theme(self):
+        """
+        Set window theme to the next theme in the list.
+
+        :returns: None
+        """
+        self.theme_button.setText(apply_theme(self.app))
