@@ -54,6 +54,16 @@ class TriadApp(QtW.QMainWindow):
         self.theme_button.clicked.connect(self.toggle_theme)
         self.tabs.setCornerWidget(self.theme_button, Qt.Corner.TopRightCorner)
 
+        # Asset View Panel Widgets
+        self.asset_search = QtW.QLineEdit()
+        self.asset_button_add = QtW.QToolButton()
+        self.folder_button_add = QtW.QToolButton()
+        self.asset_tree = QtW.QTreeWidget()
+
+        # Project Dropbox
+        self.dropbox = QtW.QLabel("Drop Project JSON file here")
+
+        # Editor Tabs
         self.init_tabs()
 
         # Status label
@@ -67,7 +77,7 @@ class TriadApp(QtW.QMainWindow):
 
         :returns: None
         """
-        self.init_tab("Projects")
+        self.projects_tab()
         self.init_tab("Palettes")
         self.init_tab("Sprites")
         self.init_tab("Animations")
@@ -84,6 +94,71 @@ class TriadApp(QtW.QMainWindow):
         """
         tab = QtW.QTabWidget()
         self.tabs.addTab(tab, name)
+
+    def projects_tab(self):
+        widget = QtW.QWidget()
+
+        dashboard_layout = QtW.QVBoxLayout(widget)
+        header = QtW.QLabel("Project Dashboard")
+        header.setFixedHeight(40)
+        header.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        header.setObjectName("headerLabel")
+        dashboard_layout.addWidget(header)
+
+        content_layout = QtW.QHBoxLayout()
+
+        # LEFT PANEL: Asset Manager
+        asset_panel = QtW.QWidget()
+        asset_panel.setFixedWidth(260)
+
+        asset_layout = QtW.QVBoxLayout(asset_panel)
+        asset_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Asset Creation and Filtering
+        asset_controls = QtW.QHBoxLayout()
+        asset_controls.setContentsMargins(0, 0, 0, 0)
+
+        # Asset Filter Search
+        search = self.asset_search
+        search.setPlaceholderText("Search Assets")
+        search.setClearButtonEnabled(True)
+        asset_controls.addWidget(search, stretch=1)
+
+        # Add Asset button
+        button = self.asset_button_add
+        built_in_icon = button.style().standardIcon(QtW.QStyle.StandardPixmap.SP_FileIcon)
+        button.setIcon(built_in_icon)
+        button.setToolTip("Create a project asset")
+        asset_controls.addWidget(button)
+
+        # Add Folder button
+        button = self.folder_button_add
+        built_in_icon = button.style().standardIcon(QtW.QStyle.StandardPixmap.SP_FileDialogNewFolder)
+        button.setIcon(built_in_icon)
+        button.setToolTip("Create a project folder")
+        asset_controls.addWidget(button)
+
+        asset_layout.addLayout(asset_controls)
+
+        # Asset Tree
+        tree = self.asset_tree
+        tree.setHeaderLabel("Assets")
+        tree.setIndentation(20)
+        tree.setUniformRowHeights(True)
+        tree.setSortingEnabled(False)  # Preserve JSON order
+        asset_layout.addWidget(tree, stretch=1)
+
+        content_layout.addWidget(asset_panel)
+
+        # RIGHT PANEL: JSON Dropbox
+        dropbox = self.dropbox
+        dropbox.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        dropbox.setObjectName("dropBox")
+        content_layout.addWidget(dropbox)
+
+        dashboard_layout.addLayout(content_layout)
+
+        self.tabs.addTab(widget, "Projects")
 
     def toggle_theme(self):
         """

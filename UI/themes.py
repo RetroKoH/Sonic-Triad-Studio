@@ -30,6 +30,7 @@ THEMES = {
     "Dark": {
         "background": "#222222",        # Window background
         "window_text": "#E4EEEE",       # Non-header window text color (Also affects title bar)
+        "header_text": "#B8BCC4",       # Header text
         "base": "#1C1C1C",              # Inner (Textbox, Scrollbar, Asset Tree)
         "button": "#343434",            # Buttons
         "button_text": "#E4EEEE",       # Button label text color
@@ -43,6 +44,7 @@ THEMES = {
     "Light": {
         "background": "#EAEAEA",
         "window_text": "#101828",
+        "header_text": "#586068",
         "base": "#FFFFFF",
         "button": "#DCE0E4",
         "button_text": "#101828",
@@ -94,6 +96,22 @@ def apply_theme(app, set_theme=None):
     app.setPalette(palette)
 
     QSS = f"""
+    /* Dashboard header text */
+    QLabel#headerLabel {{
+        color: {theme["header_text"]};
+        font-size: 18px;
+        font-weight: bold;
+    }}
+    
+    QLabel#dropBox {{
+        font-size: 16px;
+        font-weight: bold;
+        color: {theme["header_text"]};
+        border: 2px dashed {theme["accent"]};
+        border-radius: 8px;
+        background-color: {theme["base"]};
+    }}
+
     /* The background pane containing the page content */
     QTabWidget::pane {{
         /*border: 1px solid {theme["border"]};*/
