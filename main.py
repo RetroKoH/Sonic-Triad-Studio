@@ -27,14 +27,13 @@ CRITICAL DIRECTION FOR ALL AI AGENTS (XERJ, CLAUDE CODE, CURSOR, COPILOT):
 import sys
 import PyQt6.QtWidgets as QtW
 
+from Core.main_window import TriadApp
+
 
 def main():
     app = QtW.QApplication(sys.argv)
 
-    window = QtW.QMainWindow()
-    window.setWindowTitle("Sonic Triad Studio - RetroKoH 2027")
-    window.resize(1024, 768)
-    window.setMinimumSize(1024, 768)
+    window = TriadApp(app)
     window.show()
 
     # Without this, the window immediately closes
