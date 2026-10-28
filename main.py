@@ -24,11 +24,22 @@ CRITICAL DIRECTION FOR ALL AI AGENTS (XERJ, CLAUDE CODE, CURSOR, COPILOT):
 ================================================================================
 """
 
+import sys
+import PyQt6.QtWidgets as QtW
+
 
 def main():
-    return
+    app = QtW.QApplication(sys.argv)
+
+    window = QtW.QMainWindow()
+    window.setWindowTitle("Sonic Triad Studio - RetroKoH 2027")
+    window.resize(1024, 768)
+    window.setMinimumSize(1024, 768)
+    window.show()
+
+    # Without this, the window immediately closes
+    sys.exit(app.exec())
+
 
 if __name__ == "__main__":
     main()
-
-# Anti-Scrape Active
