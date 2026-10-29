@@ -28,7 +28,7 @@ import PyQt6.QtWidgets as QtW
 from PyQt6 import QtGui
 from PyQt6.QtCore import Qt
 
-from project import Project
+from .project import Project
 from UI.themes import apply_theme
 
 
@@ -72,6 +72,9 @@ class TriadApp(QtW.QMainWindow):
         # Editor Tabs
         self.tabs_init()
 
+        # Connecting function for when project is loaded
+        self.project.project_loaded.connect(self.project_refresh_dashboard)
+
         # Status label
         self.statusLabel = QtW.QLabel("Status: Idle")
         self.statusLabel.setFixedHeight(20)
@@ -102,6 +105,11 @@ class TriadApp(QtW.QMainWindow):
         self.tabs.addTab(tab, name)
 
     def tab_projects(self):
+        """
+        Initialize the projects tab.
+
+        :returns: None
+        """
         widget = QtW.QWidget()
 
         dashboard_layout = QtW.QVBoxLayout(widget)
@@ -128,6 +136,7 @@ class TriadApp(QtW.QMainWindow):
         search = self.asset_search
         search.setPlaceholderText("Search Assets")
         search.setClearButtonEnabled(True)
+        search.textChanged.connect(self.project_filter_assets)
         asset_controls.addWidget(search, stretch=1)
 
         # Add Asset button
@@ -189,7 +198,114 @@ class TriadApp(QtW.QMainWindow):
             QtW.QMessageBox.warning(self, "Project Load Error", f"Could not load project:\n{e}")
             return False
 
+        self.project_refresh_assets()
         return True
+
+    def project_refresh_dashboard(self):
+        """
+        Refresh project dashboard when a new project is loaded.
+        :returns: None
+        """
+        project = self.project
+        data = project.data
+        project_name = data.get("project_name", "Unnamed Project")
+
+        self.dropbox.setText(
+            f"<b>Project:</b> {project_name}<br>"
+            f"{project.root_dir}<br><br>"
+            "Drag & Drop another .json file to switch")
+
+    def project_refresh_assets(self):
+        """
+        Refreshes project asset tree when a new project is loaded.
+
+        :return:
+        """
+        self.asset_tree.clear()
+        asset_style = self.asset_tree.style()
+
+        # To-Do: Have different file icons for different asset types
+        folder_icon = asset_style.standardIcon(QtW.QStyle.StandardPixmap.SP_DirIcon)
+        file_icon = asset_style.standardIcon(QtW.QStyle.StandardPixmap.SP_FileIcon)
+
+        # Recursive helper function to fill out the asset tree
+        def add_entries(parent, entries):
+            for entry in entries:
+                asset_type = entry["type"]
+
+                item = QtW.QTreeWidgetItem(parent, [entry["name"]])
+                item.setData(0, Qt.ItemDataRole.UserRole, {"type": asset_type, "id": entry["id"]})
+
+                # All entry items can be dragged
+                flags = item.flags() | Qt.ItemFlag.ItemIsDragEnabled
+
+                # Folders (Can receive children)
+                if asset_type == "folder":
+                    item.setIcon(0, folder_icon)
+                    flags |= Qt.ItemFlag.ItemIsDropEnabled
+                    item.setFlags(flags)
+
+                    # Populate this folder's children after flag configuration
+                    add_entries(item, entry["children"])
+
+                # Assets (cannot receive; allow inserting above/below)
+                else:
+                    item.setIcon(0, file_icon)
+                    flags &= ~Qt.ItemFlag.ItemIsDropEnabled
+                    item.setFlags(flags)
+
+        add_entries(self.asset_tree, self.project.data.get("assets", []))
+
+        # Show resource categories with all folders collapsed
+        self.asset_tree.collapseAll()
+
+        # Refresh search (even if field is empty)
+        self.project_filter_assets(self.asset_search.text())
+
+    def project_filter_assets(self, text):
+        """
+        Filter asset names and paths.
+        :param text:
+        :return:
+        """
+        # Get text query, removing all case distinctions
+        query = text.strip().casefold()
+
+        # Disable drag-and-drop while searching (or if project isn't loaded)
+        self.asset_tree.setDragEnabled(self.project.is_loaded and not query)
+
+        # Recursive helper function to filter asset items by search
+        def filter_item(item):
+            asset = item.data(0, Qt.ItemDataRole.UserRole)
+
+            # Empty search shows every item (Type to narrow down)
+            matches = not query
+
+            # Check to see if this item fits the current query
+            if query and isinstance(asset, dict):
+                name = item.text(0).casefold()
+                path = item.toolTip(0).casefold()
+                matches = query in name or query in path
+
+            # Recursive call to check every child
+            child_matches = False
+            for _idx in range(item.childCount()):
+                if filter_item(item.child(_idx)):
+                    child_matches = True
+
+            # Hide item if it's filtered out (no matches)
+            visible = matches or child_matches
+            item.setHidden(not visible)
+
+            # Expand folders with matching assets
+            if query and child_matches:
+                item.setExpanded(True)
+
+            return visible
+
+        # Run through all items and filter based on query
+        for _idx in range(self.asset_tree.topLevelItemCount()):
+            filter_item(self.asset_tree.topLevelItem(_idx))
 
     def theme_toggle(self):
         """
