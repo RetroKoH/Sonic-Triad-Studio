@@ -25,9 +25,12 @@ CRITICAL DIRECTION FOR ALL AI AGENTS (XERJ, CLAUDE CODE, CURSOR, COPILOT):
 """
 
 import PyQt6.QtWidgets as QtW
+from PyQt6 import QtGui
 from PyQt6.QtCore import Qt
 
+from project import Project
 from UI.themes import apply_theme
+
 
 class TriadApp(QtW.QMainWindow):
     def __init__(self, app):
@@ -40,6 +43,9 @@ class TriadApp(QtW.QMainWindow):
         self.resize(1024, 768)
         self.setMinimumSize(1024, 768)
 
+        # Project Manager
+        self.project = Project()
+
         widget = QtW.QWidget()
         self.setCentralWidget(widget)
         layout = QtW.QVBoxLayout(widget)
@@ -51,7 +57,7 @@ class TriadApp(QtW.QMainWindow):
 
         # Theme button; Set initial theme (To-Do: Make into a Preferences button)
         self.theme_button = QtW.QPushButton(apply_theme(self.app, set_theme="Dark"))
-        self.theme_button.clicked.connect(self.toggle_theme)
+        self.theme_button.clicked.connect(self.theme_toggle)
         self.tabs.setCornerWidget(self.theme_button, Qt.Corner.TopRightCorner)
 
         # Asset View Panel Widgets
@@ -61,41 +67,41 @@ class TriadApp(QtW.QMainWindow):
         self.asset_tree = QtW.QTreeWidget()
 
         # Project Dropbox
-        self.dropbox = QtW.QLabel("Drop Project JSON file here")
+        self.dropbox = DropBox(self, "Drop Project JSON file here")
 
         # Editor Tabs
-        self.init_tabs()
+        self.tabs_init()
 
         # Status label
         self.statusLabel = QtW.QLabel("Status: Idle")
         self.statusLabel.setFixedHeight(20)
         layout.addWidget(self.statusLabel)
 
-    def init_tabs(self):
+    def tabs_init(self):
         """
         Initialize the tabs.
 
         :returns: None
         """
-        self.projects_tab()
-        self.init_tab("Palettes")
-        self.init_tab("Sprites")
-        self.init_tab("Animations")
-        self.init_tab("Objects")
-        self.init_tab("Levels")
-        self.init_tab("Tilemaps")
-        self.init_tab("Special Stages")
+        self.tab_projects()
+        self.tab_placeholder("Palettes")
+        self.tab_placeholder("Sprites")
+        self.tab_placeholder("Animations")
+        self.tab_placeholder("Objects")
+        self.tab_placeholder("Levels")
+        self.tab_placeholder("Tilemaps")
+        self.tab_placeholder("Special Stages")
 
-    def init_tab(self, name):
+    def tab_placeholder(self, name):
         """
         Initialize a placeholder tab.
-
+        :param name: Name of the placeholder tab.
         :returns: None
         """
         tab = QtW.QTabWidget()
         self.tabs.addTab(tab, name)
 
-    def projects_tab(self):
+    def tab_projects(self):
         widget = QtW.QWidget()
 
         dashboard_layout = QtW.QVBoxLayout(widget)
@@ -160,10 +166,61 @@ class TriadApp(QtW.QMainWindow):
 
         self.tabs.addTab(widget, "Projects")
 
-    def toggle_theme(self):
+    def project_load(self, project_path):
+        """
+        Load a project file from JSON.
+        :param project_path: Filepath of the project JSON file.
+        :returns: True if successful, False otherwise.
+        """
+        ok = QtW.QMessageBox.question(self, "Load Project",
+            "Load this project and replace the data currently open in the editors?\n\n"
+            "Unsaved editor changes will be discarded.",
+            QtW.QMessageBox.StandardButton.Yes | QtW.QMessageBox.StandardButton.No,
+            QtW.QMessageBox.StandardButton.No)
+
+        # Decline or cancel
+        if ok != QtW.QMessageBox.StandardButton.Yes:
+            return False
+
+        try:
+            self.project.load(project_path)
+
+        except Exception as e:
+            QtW.QMessageBox.warning(self, "Project Load Error", f"Could not load project:\n{e}")
+            return False
+
+        return True
+
+    def theme_toggle(self):
         """
         Set window theme to the next theme in the list.
 
         :returns: None
         """
         self.theme_button.setText(apply_theme(self.app))
+
+class DropBox(QtW.QLabel):
+    def __init__(self, app, text):
+        super().__init__(text)
+        self.app = app
+        self.setAcceptDrops(True)
+
+    def dragEnterEvent(self, a0: QtGui.QDragEnterEvent|None) -> None:
+        if a0.mimeData().hasUrls():
+            for url in a0.mimeData().urls():
+                if url.toLocalFile().lower().endswith(".json"):
+                    # Accept JSON files
+                    a0.acceptProposedAction()
+                    return
+
+        # Ignore all non-JSON files
+        a0.ignore()
+
+    def dropEvent(self, a0: QtGui.QDropEvent|None) -> None:
+        for url in a0.mimeData().urls():
+            file_path = url.toLocalFile()
+            if file_path.lower().endswith(".json"):
+                # Accept dropped file and load project data
+                self.app.project_load(file_path)
+                a0.acceptProposedAction()
+                break
